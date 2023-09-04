@@ -24,11 +24,13 @@ public class BridgeServiceImpl implements BridgeService {
     private String privateKey;
     @Value("${bridge.public.key}")
     private String publicKey;
+    @Value("${bridge.url}")
+    private String bridgeUrl;
 
     @Override
     public EncryptedMerchantResponse getEncryptedResponse(Object request) {
         BridgePgUtil bg = new BridgePgUtil();
-
+        bg.createBridgeDefaultParameters();
         ObjectMapper objectMapper = new ObjectMapper();
         String jsonString;
         Map<String, Object> hashMap;
@@ -42,17 +44,18 @@ public class BridgeServiceImpl implements BridgeService {
 
         for (Map.Entry<String, Object> entry : hashMap.entrySet()) {
             String fieldName = entry.getKey();
-            String fieldValue = entry.getValue() == null ? "null" : String.valueOf(entry.getValue());
+            String fieldValue = entry.getValue() == null ? "" : String.valueOf(entry.getValue());
             bg.addParameter(fieldName, fieldValue);
         }
 
-        String encrypt = "";
-        encrypt = bg.getEncryptedParameters(privateKey, publicKey);
+        String encrypt = hashMap.get("merchant_id") + "|";
+        encrypt += bg.getEncryptedParameters(privateKey, publicKey);
+
         String urlFraction = bg.getUrlFraction();
         log.info("urlFraction----------- " + urlFraction);
         log.info("encrypt--------- " + encrypt);
 
-        return new EncryptedMerchantResponse(encrypt, urlFraction);
+        return new EncryptedMerchantResponse(encrypt, bridgeUrl + urlFraction);
     }
 
     private static HashMap<String, String> strToMap(String resp) {
